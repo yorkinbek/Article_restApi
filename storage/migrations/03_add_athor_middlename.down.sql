@@ -1,0 +1,1 @@
+AlTER TABLE author DROP COLUMN IF EXISTS middlename;
