@@ -1,33 +1,66 @@
 package main
 
 import (
+	"fmt"
+	"github/yorqinbek/CRUD/article/config"
 	"github/yorqinbek/CRUD/article/handlers"
 	"github/yorqinbek/CRUD/article/storage"
 	"github/yorqinbek/CRUD/article/storage/postgres"
+	"net/http"
 
 	docs "github/yorqinbek/CRUD/article/docs"
 
 	"github.com/gin-gonic/gin"
-	swaggerfiles "github.com/swaggo/files"
+	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func main() {
+	cfg := config.Load()
 
-	docs.SwaggerInfo.Title = "Swagger Examle"
-	docs.SwaggerInfo.Description = "About Article with SWagger"
-	docs.SwaggerInfo.Version = "1.0"
-	r := gin.Default()
+	psqlConnString := fmt.Sprintf(
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		cfg.PostgresHost,
+		cfg.PostgresPort,
+		cfg.PostgresUser,
+		cfg.PostgresPassword,
+		cfg.PostgresDatabase,
+	)
+
+	docs.SwaggerInfo.Title = cfg.App
+	docs.SwaggerInfo.Version = cfg.AppVersion
+
 	var err error
 	var stg storage.StorageI
-
-	stg, err = postgres.InitDB("user=yorqin dbname=article password='yorqinbek' sslmode=disable")
+	stg, err = postgres.InitDB(psqlConnString)
 	if err != nil {
 		panic(err)
 	}
 
-	h := handlers.Handlers{
-		In: stg,
+	if cfg.Environment != "development" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
+	r := gin.New()
+
+	if cfg.Environment != "production" {
+		r.Use(gin.Logger(), gin.Recovery())
+	}
+
+	r.GET("/ping", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "pong",
+		})
+	})
+
+	h := handlers.NewHandler(stg, cfg)
+
+	docs.SwaggerInfo.Description = "About Article with SWagger"
+	docs.SwaggerInfo.Version = "1.0"
+
+	stg, err = postgres.InitDB(psqlConnString)
+	if err != nil {
+		panic(err)
 	}
 
 	r.POST("/article", h.CreateArticle)
@@ -41,6 +74,7 @@ func main() {
 	r.GET("/author/:id", h.GetAuthorByID)
 	r.PUT("/author", h.UpdateAuthor)
 	r.DELETE("/author", h.DeleteAuthor)
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
-	r.Run(":3000")
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	r.Run(cfg.HTTPPort)
 }

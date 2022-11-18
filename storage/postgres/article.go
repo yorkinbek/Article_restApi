@@ -40,7 +40,7 @@ func (stg Postgres) AddArticle(id string, entity moduls.CreateArticleModel) erro
 func (stg Postgres) GetArticleByID(id string) (moduls.FullArticleModuls, error) {
 	var a moduls.FullArticleModuls
 
-	var tempMiddlename *string
+	//var tempMiddlename *string
 	err := stg.db.QueryRow(`SELECT 
 		ar.id,
 		ar.title,
@@ -49,9 +49,7 @@ func (stg Postgres) GetArticleByID(id string) (moduls.FullArticleModuls, error) 
 		ar.updated_at,
 		ar.deleted_at,
 		au.id,
-		au.firstname,
-		au.lastname,
-		au.middlename,
+		au.fullname,
 		au.created_at,
 		au.updated_at,
 		au.deleted_at
@@ -63,9 +61,9 @@ func (stg Postgres) GetArticleByID(id string) (moduls.FullArticleModuls, error) 
 		&a.UpdatedAt,
 		&a.DeletedAt,
 		&a.Author.ID,
-		&a.Author.Firstname,
-		&a.Author.Lastname,
-		&tempMiddlename,
+		&a.Author.Fullname,
+		//&a.Author.Lastname,
+		//&tempMiddlename,
 		&a.Author.CreatedAt,
 		&a.Author.UpdatedAt,
 		&a.Author.DeletedAt,
@@ -74,9 +72,9 @@ func (stg Postgres) GetArticleByID(id string) (moduls.FullArticleModuls, error) 
 		return a, err
 	}
 
-	if tempMiddlename != nil {
-		a.Author.Middlename = *tempMiddlename
-	}
+	//if tempMiddlename != nil {
+	//	a.Author.Middlename = *tempMiddlename
+	//}
 
 	return a, nil
 }
